@@ -3,6 +3,10 @@ const { showStatusBar, sendStatusUpdate, sendLog } = require("./windows/statusBa
 const { createTray } = require("./services/tray");
 const { SessionManager } = require("./services/sessionManager");
 
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
+});
+
 let tray = null;
 let sessionManager = null;
 
