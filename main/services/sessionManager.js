@@ -40,7 +40,11 @@ class SessionManager extends EventEmitter {
     this.automation.on("stats", (data) => {
       this._statsMinutes += data.minutes;
       if (this._statsMinutes >= 5) {
-        this._statsTracker?.recordSession(this._statsMinutes);
+        this._statsTracker?.recordSession(
+          this._statsMinutes,
+          data.pagesRead || 0,
+          data.booksRead || 0,
+        );
         this._statsMinutes = 0;
       }
     });
@@ -50,6 +54,9 @@ class SessionManager extends EventEmitter {
     });
 
     this.automation.on("complete", () => {
+      if (this._statsMinutes > 0) {
+        this._statsTracker?.recordSession(this._statsMinutes, 0, 0);
+      }
       this.automation = null;
     });
 

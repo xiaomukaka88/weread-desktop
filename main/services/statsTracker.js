@@ -24,7 +24,7 @@ class StatsTracker {
     fs.writeFileSync(this.statsPath, JSON.stringify(this.data, null, 2));
   }
 
-  recordSession(minutes) {
+  recordSession(minutes, pages = 0, books = 0) {
     const today = new Date().toISOString().slice(0, 10);
     let day = this.data.days.find((d) => d.date === today);
     if (!day) {
@@ -32,17 +32,24 @@ class StatsTracker {
       this.data.days.push(day);
     }
     day.minutes += minutes;
+    day.pagesRead += pages;
+    day.booksRead += books;
     this.data.roundDay += 1;
     this.save();
   }
 
   getSummary() {
+    const today = new Date().toISOString().slice(0, 10);
+    const todayDay = this.data.days.find((d) => d.date === today);
+    const todayMinutes = todayDay ? todayDay.minutes : 0;
+
     const totalMinutes = this.data.days.reduce((sum, d) => sum + d.minutes, 0);
     const totalDays = this.data.days.length;
     const roundMinutes = this.data.days
       .filter((d) => d.date >= (this.data.roundStart || "2000-01-01"))
       .reduce((sum, d) => sum + d.minutes, 0);
     return {
+      todayMinutes,
       totalMinutes,
       totalDays,
       roundMinutes,
@@ -58,6 +65,8 @@ class StatsTracker {
     return this.data.days.slice(-30).map((d) => ({
       date: d.date.slice(5),
       minutes: d.minutes,
+      pagesRead: d.pagesRead || 0,
+      booksRead: d.booksRead || 0,
     }));
   }
 }

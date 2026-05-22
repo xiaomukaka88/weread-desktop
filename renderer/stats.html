@@ -93,6 +93,29 @@
       font-size: 9px;
       color: var(--text-secondary);
     }
+
+    .extra-stats {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .extra-stat {
+      flex: 1;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 10px;
+      text-align: center;
+    }
+    .extra-stat .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-secondary);
+    }
+    .extra-stat .label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
@@ -119,6 +142,17 @@
         <div class="label">累计时长</div>
         <div class="value" id="totalHours">0</div>
         <div class="sub">小时</div>
+      </div>
+    </div>
+
+    <div class="extra-stats">
+      <div class="extra-stat">
+        <div class="value" id="totalPages">0</div>
+        <div class="label">累计页数</div>
+      </div>
+      <div class="extra-stat">
+        <div class="value" id="totalBooks">0</div>
+        <div class="label">累计本书</div>
       </div>
     </div>
 
@@ -163,8 +197,14 @@
       document.getElementById("minutesPct").textContent =
         Math.round(summary.minutesProgress) + "%";
 
-      // Chart
+      // Pages and books from daily data
       const dailyData = await window.weread.getDailyStats(activeUser.id);
+      const totalPages = dailyData.reduce((s, d) => s + (d.pagesRead || 0), 0);
+      const totalBooks = dailyData.reduce((s, d) => s + (d.booksRead || 0), 0);
+      document.getElementById("totalPages").textContent = totalPages;
+      document.getElementById("totalBooks").textContent = totalBooks;
+
+      // Chart
       const chart = document.getElementById("chart");
       const chartLabels = document.getElementById("chartLabels");
       chart.innerHTML = "";

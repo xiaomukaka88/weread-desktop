@@ -115,6 +115,8 @@ class WeReadAutomation {
   async startReading() {
     this.running = true;
     this.elapsedMinutes = 0;
+    this._pagesSinceLastStats = 0;
+    this._booksSinceLastStats = 0;
 
     await this.init();
     this.driver = await this.buildDriver();
@@ -169,7 +171,13 @@ class WeReadAutomation {
 
         if (this.elapsedMinutes % 5 === 0) {
           await this.saveCookies();
-          this.emitter?.emit("stats", { minutes: 5 });
+          this.emitter?.emit("stats", {
+            minutes: 5,
+            pagesRead: this._pagesSinceLastStats || 0,
+            booksRead: this._booksSinceLastStats || 0,
+          });
+          this._pagesSinceLastStats = 0;
+          this._booksSinceLastStats = 0;
         }
 
       } catch (err) {
@@ -216,15 +224,18 @@ class WeReadAutomation {
         );
       }
     }
+    this._booksSinceLastStats = (this._booksSinceLastStats || 0) + 1;
     await this.driver.sleep(3000);
   }
 
   async _turnPage() {
     try {
       await this.driver.findElement(By.tagName("body")).sendKeys(Key.SPACE);
+      this._pagesSinceLastStats = (this._pagesSinceLastStats || 0) + 1;
     } catch (_) {
       const body = await this.driver.findElement(By.tagName("body"));
       await body.click();
+      this._pagesSinceLastStats = (this._pagesSinceLastStats || 0) + 1;
     }
   }
 
