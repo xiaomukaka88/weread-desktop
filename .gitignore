@@ -1,5 +1,6 @@
 # Build output
 dist/
+dist-new/
 dist-build/
 build-output/
 output-*/
