@@ -11,8 +11,8 @@ function createSettingsWindow() {
 
   settingsWindow = new BrowserWindow({
     width: 600,
-    height: 700,
-    frame: true,
+    height: 500,
+    title: "设置",
     webPreferences: {
       preload: path.join(__dirname, "..", "..", "preload", "index.js"),
       contextIsolation: true,
@@ -30,7 +30,9 @@ function createSettingsWindow() {
 }
 
 function showSettingsWindow() {
-  createSettingsWindow();
+  const win = createSettingsWindow();
+  win.show();
+  return win;
 }
 
 module.exports = { createSettingsWindow, showSettingsWindow };
