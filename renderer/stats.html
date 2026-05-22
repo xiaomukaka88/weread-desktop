@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url("styles/shared.css");
+
+    body { overflow-y: auto; user-select: text; }
+
+    #app { padding: 20px; max-width: 440px; margin: 0 auto; }
+
+    h2 { font-size: 18px; margin-bottom: 4px; }
+    .subtitle { color: var(--text-secondary); font-size: 13px; margin-bottom: 20px; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .stat-card .label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 4px;
+      color: var(--accent);
+    }
+    .stat-card .sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .progress-section { margin-bottom: 20px; }
+    .progress-section h3 { font-size: 14px; margin-bottom: 8px; }
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .progress-row .label { font-size: 13px; width: 60px; }
+    .progress-row .bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-row .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+      border-radius: 3px;
+      transition: width 0.5s;
+    }
+    .progress-row .pct { font-size: 13px; width: 50px; text-align: right; }
+
+    .chart-section { margin-top: 16px; }
+    .chart-section h3 { font-size: 14px; margin-bottom: 10px; }
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 100px;
+      padding: 0 4px;
+    }
+    .chart-bar {
+      flex: 1;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+      transition: height 0.3s;
+    }
+    .chart-bar:hover { opacity: 0.8; }
+    .chart-labels {
+      display: flex;
+      gap: 3px;
+      margin-top: 4px;
+    }
+    .chart-labels span {
+      flex: 1;
+      text-align: center;
+      font-size: 9px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h2>阅读统计</h2>
+    <div class="subtitle" id="userLabel">加载中...</div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">今日时长</div>
+        <div class="value" id="todayMinutes">0</div>
+        <div class="sub">分钟</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">本轮天数</div>
+        <div class="value" id="roundDay">0</div>
+        <div class="sub">/ 29 天</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">累计天数</div>
+        <div class="value" id="totalDays">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">累计时长</div>
+        <div class="value" id="totalHours">0</div>
+        <div class="sub">小时</div>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <h3>本轮打卡进度</h3>
+      <div class="progress-row">
+        <span class="label">天数</span>
+        <div class="bar"><div class="bar-fill" id="daysBar"></div></div>
+        <span class="pct" id="daysPct">0%</span>
+      </div>
+      <div class="progress-row">
+        <span class="label">时长</span>
+        <div class="bar"><div class="bar-fill" id="minutesBar"></div></div>
+        <span class="pct" id="minutesPct">0%</span>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <h3>近 30 天阅读时长</h3>
+      <div class="chart" id="chart"></div>
+      <div class="chart-labels" id="chartLabels"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadStats() {
+      const activeUser = await window.weread.getActiveUser();
+      document.getElementById("userLabel").textContent = activeUser?.name || "";
+
+      const summary = await window.weread.getStats(activeUser.id);
+      document.getElementById("todayMinutes").textContent =
+        summary.todayMinutes || 0;
+      document.getElementById("roundDay").textContent = summary.roundDay;
+      document.getElementById("totalDays").textContent = summary.totalDays;
+      document.getElementById("totalHours").textContent =
+        Math.round(summary.totalMinutes / 60);
+
+      document.getElementById("daysBar").style.width = summary.daysProgress + "%";
+      document.getElementById("daysPct").textContent =
+        Math.round(summary.daysProgress) + "%";
+      document.getElementById("minutesBar").style.width = summary.minutesProgress + "%";
+      document.getElementById("minutesPct").textContent =
+        Math.round(summary.minutesProgress) + "%";
+
+      // Chart
+      const dailyData = await window.weread.getDailyStats(activeUser.id);
+      const chart = document.getElementById("chart");
+      const chartLabels = document.getElementById("chartLabels");
+      chart.innerHTML = "";
+      chartLabels.innerHTML = "";
+
+      const maxMin = Math.max(...dailyData.map((d) => d.minutes), 1);
+      dailyData.forEach((d) => {
+        const bar = document.createElement("div");
+        bar.className = "chart-bar";
+        bar.style.height = Math.max(2, (d.minutes / maxMin) * 100) + "px";
+        bar.title = d.date + ": " + d.minutes + "分钟";
+        chart.appendChild(bar);
+
+        const label = document.createElement("span");
+        label.textContent = d.date.slice(-2);
+        chartLabels.appendChild(label);
+      });
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>
