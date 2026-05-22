@@ -1,9 +1,17 @@
-const { Tray, Menu, app } = require("electron");
+const { Tray, Menu, app, nativeImage } = require("electron");
 const path = require("path");
 
 function createTray(sessionManager) {
-  const trayIcon = path.join(__dirname, "..", "..", "build", "tray-icon.png");
-  const tray = new Tray(trayIcon);
+  const trayIconPath = path.join(app.getAppPath(), "build", "tray-icon.png");
+  let tray;
+
+  try {
+    const icon = nativeImage.createFromPath(trayIconPath);
+    tray = icon.isEmpty() ? new Tray(nativeImage.createEmpty()) : new Tray(icon);
+  } catch (_) {
+    // Fallback to empty tray if icon cannot be loaded
+    tray = new Tray(nativeImage.createEmpty());
+  }
 
   const updateMenu = () => {
     const status = sessionManager.getStatus();

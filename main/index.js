@@ -15,11 +15,16 @@ app.whenReady().then(async () => {
   sessionManager.on("update", (data) => sendStatusUpdate(data));
   sessionManager.on("log", (data) => sendLog(data));
 
-  showStatusBar();
-  tray = createTray(sessionManager);
-
   const { registerIpcHandlers } = require("./ipc/handlers");
   registerIpcHandlers(sessionManager);
+
+  showStatusBar();
+
+  try {
+    tray = createTray(sessionManager);
+  } catch (err) {
+    console.error("Tray creation failed:", err.message);
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
