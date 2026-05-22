@@ -1,4 +1,7 @@
 const { Builder, Browser, until, Key, By } = require("selenium-webdriver");
+const ChromeOptions = require("selenium-webdriver/chrome").Options;
+const FirefoxOptions = require("selenium-webdriver/firefox").Options;
+const EdgeOptions = require("selenium-webdriver/edge").Options;
 const fs = require("fs");
 const path = require("path");
 
@@ -10,6 +13,8 @@ class WeReadAutomation {
     this.running = false;
     this.elapsedMinutes = 0;
     this._timer = null;
+    this._sleepResolve = null;
+    this._sleepReject = null;
   }
 
   get dataDir() {
@@ -34,28 +39,26 @@ class WeReadAutomation {
     let options;
     switch (browserType) {
       case Browser.FIREFOX:
-        options = require("selenium-webdriver/firefox").Options();
+        options = new FirefoxOptions();
         break;
       case "MicrosoftEdge":
-        options = require("selenium-webdriver/edge").Options();
+        options = new EdgeOptions();
         break;
       default:
-        options = require("selenium-webdriver/chrome").Options();
+        options = new ChromeOptions();
     }
 
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");
 
     const profileDir = path.join(this.dataDir, "profile");
-    if (fs.existsSync(profileDir)) {
-      if (browserType === Browser.CHROME) {
-        options.addArguments(`--user-data-dir=${profileDir}`);
-      }
+    if (fs.existsSync(profileDir) && browserType === Browser.CHROME) {
+      options.addArguments(`--user-data-dir=${profileDir}`);
     }
 
     const driver = await new Builder()
       .forBrowser(browserType)
-      .setChromeOptions(options)
+      .setOptions(options)
       .build();
 
     return driver;
@@ -120,10 +123,12 @@ class WeReadAutomation {
     if (hasCookies) {
       await this.driver.get("https://weread.qq.com/");
       try {
-        await this.driver.manage().deleteAllCookies();
+        await this.driver.sleep(2000);
         const cookies = JSON.parse(fs.readFileSync(this.cookieFile, "utf8"));
         for (const cookie of cookies) {
-          await this.driver.manage().addCookie(cookie);
+          try {
+            await this.driver.manage().addCookie(cookie);
+          } catch (_) {}
         }
         await this.driver.get("https://weread.qq.com/");
         await this.driver.wait(until.urlContains("reader"), 10000);
@@ -168,8 +173,13 @@ class WeReadAutomation {
         }
 
       } catch (err) {
+        if (!this.running) return;
         this.log("Reading loop error: " + err.message);
-        await this._sleep(10000);
+        try {
+          await this._sleep(10000);
+        } catch (_) {
+          if (!this.running) return;
+        }
       }
     }
 
@@ -226,8 +236,15 @@ class WeReadAutomation {
   }
 
   _sleep(ms) {
-    return new Promise((resolve) => {
-      this._timer = setTimeout(resolve, ms);
+    return new Promise((resolve, reject) => {
+      this._sleepResolve = resolve;
+      this._sleepReject = reject;
+      this._timer = setTimeout(() => {
+        this._timer = null;
+        this._sleepResolve = null;
+        this._sleepReject = null;
+        resolve();
+      }, ms);
     });
   }
 
@@ -236,6 +253,10 @@ class WeReadAutomation {
     if (this._timer) {
       clearTimeout(this._timer);
       this._timer = null;
+    }
+    if (this._sleepReject) {
+      this._sleepReject(new Error("Sleep cancelled"));
+      this._sleepReject = null;
     }
     if (this.driver) {
       try {
