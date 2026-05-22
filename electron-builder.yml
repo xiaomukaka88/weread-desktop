@@ -16,6 +16,5 @@ files:
   - "main/**/*"
   - "preload/**/*"
   - "renderer/**/*"
-  - "node_modules/**/*"
 extraMetadata:
   main: main/index.js
