@@ -32,12 +32,11 @@ class SessionManager extends EventEmitter {
 
     this.automation = new WeReadAutomation(automationConfig, this);
 
-    this.automation.on("update", (data) => {
+    this.on("update", (data) => {
       this._status = data;
-      this.emit("update", data);
     });
 
-    this.automation.on("stats", (data) => {
+    this.on("stats", (data) => {
       this._statsMinutes += data.minutes;
       if (this._statsMinutes >= 5) {
         this._statsTracker?.recordSession(
@@ -49,11 +48,7 @@ class SessionManager extends EventEmitter {
       }
     });
 
-    this.automation.on("log", (data) => {
-      this.emit("log", data);
-    });
-
-    this.automation.on("complete", () => {
+    this.on("complete", () => {
       if (this._statsMinutes > 0) {
         this._statsTracker?.recordSession(this._statsMinutes, 0, 0);
       }
