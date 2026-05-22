@@ -82,6 +82,22 @@
       font-size: 12px;
       cursor: pointer;
     }
+    .user-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .btn-sm {
+      padding: 4px 10px;
+      background: var(--bg-button);
+      border: none;
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-danger {
+      background: #c0392b;
+    }
 
     .btn {
       padding: 8px 16px;
@@ -95,9 +111,30 @@
     .btn-secondary {
       background: var(--bg-button);
     }
+
+    #saveFeedback {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--status-active);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #saveFeedback.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
+  <div id="saveFeedback">已保存</div>
   <div id="app">
     <h2>设置</h2>
     <div class="tabs">
@@ -217,7 +254,12 @@
       for (const [id, u] of Object.entries(config.users)) {
         const div = document.createElement("div");
         div.className = "user-item";
-        div.innerHTML = `<span class="name">${u.name}${id === config.activeUserId ? " (当前)" : ""}</span>`;
+        const isCurrent = id === config.activeUserId;
+        div.innerHTML = `<span class="name">${u.name}${isCurrent ? " (当前)" : ""}</span>
+          <span class="user-actions">
+            ${isCurrent ? "" : `<button class="btn btn-sm" onclick="window._switchUser('${id}')">切换</button>`}
+            <button class="btn btn-sm btn-danger" onclick="window._removeUser('${id}')">删除</button>
+          </span>`;
         userList.appendChild(div);
       }
     }
@@ -230,6 +272,7 @@
       user.speed = document.getElementById("speed").value;
       user.selection = parseInt(document.getElementById("selection").value);
       await window.weread.saveUsers(config);
+      showSaveFeedback();
     });
 
     document.getElementById("addUser").addEventListener("click", async () => {
@@ -245,6 +288,7 @@
       };
       await window.weread.saveUsers(config);
       loadSettings();
+      showSaveFeedback();
     });
 
     document.getElementById("saveNotify").addEventListener("click", async () => {
@@ -256,6 +300,7 @@
       user.email.pass = document.getElementById("emailPass").value;
       user.bark.key = document.getElementById("barkKey").value;
       await window.weread.saveUsers(config);
+      showSaveFeedback();
     });
 
     document.getElementById("saveSchedule").addEventListener("click", async () => {
@@ -264,7 +309,37 @@
       user.schedule.enabled = document.getElementById("scheduleEnabled").checked;
       user.schedule.intervalMinutes = parseInt(document.getElementById("scheduleInterval").value);
       await window.weread.saveUsers(config);
+      showSaveFeedback();
     });
+
+    function showSaveFeedback() {
+      const el = document.getElementById("saveFeedback");
+      el.classList.add("show");
+      setTimeout(() => {
+        el.classList.remove("show");
+      }, 1500);
+    }
+
+    // User actions (exposed on window for inline onclick)
+    window._switchUser = async (userId) => {
+      await window.weread.setActiveUser(userId);
+      loadSettings();
+      showSaveFeedback();
+    };
+
+    window._removeUser = async (userId) => {
+      const config = await window.weread.getUsers();
+      const userCount = Object.keys(config.users).length;
+      if (userCount <= 1) {
+        alert("至少保留一个用户");
+        return;
+      }
+      const user = config.users[userId];
+      if (!confirm(`确认删除用户 "${user.name}"？`)) return;
+      await window.weread.removeUser(userId);
+      loadSettings();
+      showSaveFeedback();
+    };
 
     loadSettings();
   </script>

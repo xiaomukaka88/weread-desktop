@@ -96,11 +96,7 @@
   </div>
 
   <script>
-    // Drag-to-move for frameless window
-    const app = document.getElementById("app");
-    app.addEventListener("mousedown", (e) => {
-      if (e.target.closest(".controls, .user-select, #timer")) return;
-    });
+    // Drag-to-move handled by CSS -webkit-app-region: drag on #app
 
     // State
     let sessionStatus = { running: false, minutes: 0, targetMinutes: 68 };
