@@ -98,6 +98,23 @@
     .btn-danger {
       background: #c0392b;
     }
+    .login-btn {
+      background: var(--status-active);
+    }
+    .login-status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-right: 6px;
+    }
+    .login-status.logged-in {
+      background: rgba(46, 204, 113, 0.15);
+      color: #2ecc71;
+    }
+    .login-status.not-logged-in {
+      background: rgba(255, 165, 0, 0.15);
+      color: #f39c12;
+    }
 
     .btn {
       padding: 8px 16px;
@@ -180,8 +197,9 @@
   <div id="saveFeedback">已保存</div>
   <div id="addUserModal" class="modal-overlay">
     <div class="modal-box">
-      <h3>添加用户</h3>
+      <h3 id="addUserTitle">添加用户</h3>
       <input type="text" id="addUserName" placeholder="用户名称" autofocus>
+      <p id="addUserStatus" style="font-size:13px;color:var(--text-secondary);margin:0;display:none;"></p>
       <div class="modal-actions">
         <button class="btn btn-secondary" id="cancelAddUser">取消</button>
         <button class="btn" id="confirmAddUser">确定</button>
@@ -317,8 +335,11 @@
         const div = document.createElement("div");
         div.className = "user-item";
         const isCurrent = id === config.activeUserId;
+        const isLoggedIn = await window.weread.checkUserLogin(id);
         div.innerHTML = `<span class="name">${u.name}${isCurrent ? " (当前)" : ""}</span>
           <span class="user-actions">
+            <span class="login-status ${isLoggedIn ? 'logged-in' : 'not-logged-in'}">${isLoggedIn ? '已登录' : '未登录'}</span>
+            ${isLoggedIn ? "" : `<button class="btn btn-sm login-btn" onclick="window._loginUser('${id}')">去登录</button>`}
             ${isCurrent ? "" : `<button class="btn btn-sm" onclick="window._switchUser('${id}')">切换</button>`}
             <button class="btn btn-sm btn-danger" onclick="window._removeUser('${id}')">删除</button>
           </span>`;
@@ -349,7 +370,6 @@
       const input = document.getElementById("addUserName");
       const name = input.value.trim();
       if (!name) return;
-      closeModal();
 
       const config = await window.weread.getUsers();
       const id = "user-" + Date.now();
@@ -360,8 +380,66 @@
         schedule: { enabled: false, intervalMinutes: 360 },
       };
       await window.weread.saveUsers(config);
+
+      // Now trigger login via browser
+      await performLogin(id, true);
       loadSettings();
       showSaveFeedback();
+    }
+
+    async function performLogin(userId, fromModal = true) {
+      let statusEl = null;
+      let titleEl = null;
+      let confirmBtn = null;
+      let cancelBtn = null;
+      let input = null;
+
+      if (fromModal) {
+        input = document.getElementById("addUserName");
+        statusEl = document.getElementById("addUserStatus");
+        titleEl = document.getElementById("addUserTitle");
+        confirmBtn = document.getElementById("confirmAddUser");
+        cancelBtn = document.getElementById("cancelAddUser");
+
+        // Show login-in-progress UI
+        if (input) input.style.display = "none";
+        if (confirmBtn) confirmBtn.style.display = "none";
+        if (cancelBtn) cancelBtn.textContent = "关闭";
+        if (statusEl) {
+          statusEl.style.display = "block";
+          statusEl.style.color = "";
+          statusEl.textContent = "正在打开浏览器，请在弹出的浏览器窗口中扫描二维码登录...";
+        }
+        if (titleEl) titleEl.textContent = "正在登录...";
+      } else {
+        showToast("正在打开浏览器，请在弹出的窗口中扫码登录...");
+      }
+
+      const result = await window.weread.loginUser(userId);
+
+      // Reset modal
+      if (fromModal) {
+        if (input) input.style.display = "";
+        if (confirmBtn) confirmBtn.style.display = "";
+        if (cancelBtn) cancelBtn.textContent = "取消";
+        if (titleEl) titleEl.textContent = "添加用户";
+        if (statusEl) {
+          if (result.success) {
+            statusEl.textContent = "登录成功！";
+            statusEl.style.color = "var(--status-active)";
+            setTimeout(() => { closeModal(); }, 1000);
+          } else {
+            statusEl.textContent = "登录失败: " + (result.error || "未知错误");
+            statusEl.style.display = "block";
+          }
+        }
+      } else {
+        if (result.success) {
+          showToast("登录成功！");
+        } else {
+          showToast("登录失败: " + (result.error || "未知错误"));
+        }
+      }
     }
 
     document.getElementById("confirmAddUser").addEventListener("click", doAddUser);
@@ -372,6 +450,8 @@
     });
 
     function closeModal() {
+      const statusEl = document.getElementById("addUserStatus");
+      statusEl.style.color = "";
       document.getElementById("addUserModal").classList.remove("show");
     }
 
@@ -422,6 +502,13 @@
       const confirmed = await confirmDialog(`确认删除用户 "${user.name}"？`);
       if (!confirmed) return;
       await window.weread.removeUser(userId);
+      loadSettings();
+      showSaveFeedback();
+    };
+
+    window._loginUser = async (userId) => {
+      await window.weread.setActiveUser(userId);
+      await performLogin(userId, false);
       loadSettings();
       showSaveFeedback();
     };

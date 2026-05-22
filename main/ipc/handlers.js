@@ -31,8 +31,16 @@ function registerIpcHandlers(sessionManager) {
     getUserManager().addUser(user);
   });
 
+  ipcMain.handle("login-user", async (_, userId) => {
+    return await sessionManager.loginUser(userId);
+  });
+
   ipcMain.handle("remove-user", (_, userId) => {
     getUserManager().removeUser(userId);
+  });
+
+  ipcMain.handle("check-user-login", (_, userId) => {
+    return getUserManager().isLoggedIn(userId);
   });
 
   // Session control

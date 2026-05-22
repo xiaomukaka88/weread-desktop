@@ -120,6 +120,26 @@ class WeReadAutomation {
     await this.init();
     this.driver = await this.buildDriver();
 
+    await this._ensureLoggedIn();
+
+    if (!this.running) return;
+    await this._readingLoop();
+  }
+
+  async login() {
+    this.running = true;
+    this.elapsedMinutes = 0;
+
+    await this.init();
+    this.driver = await this.buildDriver();
+
+    await this._ensureLoggedIn();
+
+    this.log("Login complete, closing browser");
+    await this.stop();
+  }
+
+  async _ensureLoggedIn() {
     const hasCookies = await this.loadCookies();
     if (hasCookies) {
       await this.driver.get("https://weread.qq.com/");
@@ -140,9 +160,6 @@ class WeReadAutomation {
     } else {
       await this.waitForLogin();
     }
-
-    if (!this.running) return;
-    await this._readingLoop();
   }
 
   async _readingLoop() {

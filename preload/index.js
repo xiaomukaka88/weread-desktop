@@ -3,7 +3,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 const ALLOWED_SEND_CHANNELS = new Set(["open-settings", "open-stats"]);
 const ALLOWED_INVOKE_CHANNELS = new Set([
   "get-users", "save-users", "get-active-user", "set-active-user",
-  "add-user", "remove-user", "start-reading", "stop-reading",
+  "add-user", "login-user", "remove-user", "check-user-login",
+  "start-reading", "stop-reading",
   "get-session-status", "get-stats", "get-daily-stats",
 ]);
 const ALLOWED_LISTEN_CHANNELS = new Set(["session:update", "log"]);
@@ -50,7 +51,9 @@ contextBridge.exposeInMainWorld("weread", {
   getActiveUser: () => ipcRenderer.invoke("get-active-user"),
   setActiveUser: (userId) => ipcRenderer.invoke("set-active-user", userId),
   addUser: (user) => ipcRenderer.invoke("add-user", user),
+  loginUser: (userId) => ipcRenderer.invoke("login-user", userId),
   removeUser: (userId) => ipcRenderer.invoke("remove-user", userId),
+  checkUserLogin: (userId) => ipcRenderer.invoke("check-user-login", userId),
   startReading: (userId) => ipcRenderer.invoke("start-reading", userId),
   stopReading: () => ipcRenderer.invoke("stop-reading"),
   getSessionStatus: () => ipcRenderer.invoke("get-session-status"),

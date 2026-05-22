@@ -69,6 +69,30 @@ class SessionManager extends EventEmitter {
     this.emit("update", this._status);
   }
 
+  async loginUser(userId) {
+    const um = new UserManager();
+    const config = um.getConfig();
+    const user = config.users[userId];
+    if (!user) return { success: false, error: "User not found" };
+
+    const automationConfig = {
+      userId,
+      duration: user.duration,
+      browser: user.browser,
+      selection: user.selection,
+      speed: user.speed,
+      dataDir: `.weread/${userId}`,
+    };
+
+    const auth = new WeReadAutomation(automationConfig, this);
+    try {
+      await auth.login();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
   getStatus() {
     return this.automation ? this.automation.getStatus() : this._status;
   }

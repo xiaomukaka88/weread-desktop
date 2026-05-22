@@ -63,6 +63,17 @@ class UserManager {
     delete this.config.users[userId];
     this.save(this.config);
   }
+
+  isLoggedIn(userId) {
+    const cookiePath = path.join(app.getPath("userData"), ".weread", userId, "cookies.json");
+    try {
+      if (fs.existsSync(cookiePath)) {
+        const cookies = JSON.parse(fs.readFileSync(cookiePath, "utf8"));
+        return cookies.length > 0;
+      }
+    } catch (_) {}
+    return false;
+  }
 }
 
 module.exports = { UserManager, CONFIG_PATH };
