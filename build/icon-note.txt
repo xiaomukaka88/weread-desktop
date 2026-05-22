@@ -1,0 +1,16 @@
+electron-builder failed to download the Electron binary:
+
+  Get "https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip":
+  read tcp ... wsarecv: A connection attempt failed because the connected party
+  did not properly respond after a period of time, or established connection
+  failed because connected host has failed to respond.
+
+To fix:
+1. Ensure you can access GitHub / the Electron release page from your network.
+   If you use a proxy, set ELECTRON_GET_USE_PROXY=true and configure HTTPS_PROXY.
+2. Alternatively, download the zip manually and place it in:
+   %LOCALAPPDATA%\electron\Cache\
+3. Or set an Electron mirror to a closer CDN before running the build:
+   set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+   set ELECTRON_CUSTOM_DIR=v33.4.11
+   npm run build:dir
