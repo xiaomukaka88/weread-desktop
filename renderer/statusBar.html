@@ -27,6 +27,14 @@
     }
     .status-dot.active { background: var(--status-active); }
     .status-dot.paused { background: var(--status-paused); }
+    .status-dot.login {
+      background: var(--accent);
+      animation: blink 1s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
 
     .timer {
       font-size: 13px;
@@ -159,7 +167,7 @@
         `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 
       const dot = document.getElementById("statusDot");
-      dot.className = "status-dot " + (status === "login" ? "" : running ? "active" : "paused");
+      dot.className = "status-dot " + (status === "login" ? "login" : running ? "active" : "paused");
 
       const pct = Math.min(100, (minutes / targetMinutes) * 100);
       document.getElementById("progressFill").style.width = pct + "%";
