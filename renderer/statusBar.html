@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url("styles/shared.css");
+
+    #app {
+      width: 380px;
+      height: 44px;
+      background: var(--bg-dark);
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      cursor: move;
+      -webkit-app-region: drag;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--status-stopped);
+      flex-shrink: 0;
+    }
+    .status-dot.active { background: var(--status-active); }
+    .status-dot.paused { background: var(--status-paused); }
+
+    .timer {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+      border-radius: 2px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    .controls {
+      display: flex;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+    .btn {
+      padding: 4px 10px;
+      background: var(--bg-button);
+      border: none;
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-accent { background: var(--accent); }
+
+    .user-select {
+      background: var(--bg-button);
+      border: none;
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      padding: 4px 6px;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="statusDot" class="status-dot"></div>
+    <div id="timer" class="timer" title="点击查看统计">00:00</div>
+    <div class="progress-bar">
+      <div id="progressFill" class="progress-fill"></div>
+    </div>
+    <select id="userSelect" class="user-select"></select>
+    <div class="controls">
+      <button id="toggleBtn" class="btn btn-accent">▶</button>
+      <button id="settingsBtn" class="btn">⚙</button>
+    </div>
+  </div>
+
+  <script>
+    // Drag-to-move for frameless window
+    const app = document.getElementById("app");
+    app.addEventListener("mousedown", (e) => {
+      if (e.target.closest(".controls, .user-select, #timer")) return;
+    });
+
+    // State
+    let sessionStatus = { running: false, minutes: 0, targetMinutes: 68 };
+
+    async function init() {
+      // Load users
+      const config = await window.weread.getUsers();
+      const activeUserId = config.activeUserId;
+      const userSelect = document.getElementById("userSelect");
+      userSelect.innerHTML = "";
+      for (const [id, user] of Object.entries(config.users)) {
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = user.name;
+        if (id === activeUserId) opt.selected = true;
+        userSelect.appendChild(opt);
+      }
+
+      userSelect.addEventListener("change", async () => {
+        await window.weread.setActiveUser(userSelect.value);
+      });
+
+      // Load session status
+      const status = await window.weread.getSessionStatus();
+      updateUI(status);
+
+      // Listen for updates
+      window.weread.onSessionUpdate((data) => {
+        updateUI(data);
+      });
+
+      // Toggle button
+      document.getElementById("toggleBtn").addEventListener("click", async () => {
+        if (sessionStatus.running) {
+          await window.weread.stopReading();
+        } else {
+          const activeUser = await window.weread.getActiveUser();
+          await window.weread.startReading(activeUser.id);
+        }
+      });
+
+      // Settings button
+      document.getElementById("settingsBtn").addEventListener("click", () => {
+        window.weread.send("open-settings");
+      });
+
+      // Stats panel
+      document.getElementById("timer").addEventListener("click", () => {
+        window.weread.send("open-stats");
+      });
+    }
+
+    function updateUI(data) {
+      sessionStatus = { ...sessionStatus, ...data };
+      const { running, minutes = 0, targetMinutes = 68 } = sessionStatus;
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      document.getElementById("timer").textContent =
+        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+
+      const dot = document.getElementById("statusDot");
+      dot.className = "status-dot " + (running ? "active" : "paused");
+
+      const pct = Math.min(100, (minutes / targetMinutes) * 100);
+      document.getElementById("progressFill").style.width = pct + "%";
+
+      const toggleBtn = document.getElementById("toggleBtn");
+      toggleBtn.textContent = running ? "⏸" : "▶";
+      toggleBtn.className = running ? "btn btn-accent" : "btn";
+    }
+
+    init();
+  </script>
+</body>
+</html>
