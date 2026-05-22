@@ -151,14 +151,15 @@
 
     function updateUI(data) {
       sessionStatus = { ...sessionStatus, ...data };
-      const { running, minutes = 0, targetMinutes = 68 } = sessionStatus;
+      const { running, minutes = 0, targetMinutes = 68, status } = sessionStatus;
       const h = Math.floor(minutes / 60);
       const m = minutes % 60;
-      document.getElementById("timer").textContent =
+      const timer = document.getElementById("timer");
+      timer.textContent = status === "login" ? "扫码登录" :
         `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 
       const dot = document.getElementById("statusDot");
-      dot.className = "status-dot " + (running ? "active" : "paused");
+      dot.className = "status-dot " + (status === "login" ? "" : running ? "active" : "paused");
 
       const pct = Math.min(100, (minutes / targetMinutes) * 100);
       document.getElementById("progressFill").style.width = pct + "%";

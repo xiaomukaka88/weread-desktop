@@ -85,31 +85,30 @@ class WeReadAutomation {
   }
 
   async waitForLogin() {
-    this.log("Waiting for login...");
+    this.log("Waiting for login (QR code)...");
+    this.emitter?.emit("update", {
+      running: true,
+      minutes: 0,
+      targetMinutes: this.config.duration,
+      status: "login",
+    });
+
     const WAIT_URL = "https://weread.qq.com/";
+    await this.driver.get(WAIT_URL);
 
-    while (this.running) {
-      await this.driver.get(WAIT_URL);
-      this.log("Please scan QR code to login...");
-
-      try {
-        await this.driver.wait(
-          until.urlContains("reader"),
-          300000,
-        );
-        await this.saveCookies();
-        this.log("Login successful");
-        return true;
-      } catch (_) {
-        const currentUrl = await this.driver.getCurrentUrl();
-        if (currentUrl.includes("weread.qq.com")) {
-          this.log("Still waiting for login...");
-        }
-      }
-
+    try {
+      await this.driver.wait(
+        until.urlContains("reader"),
+        300000,
+      );
+      await this.saveCookies();
+      this.log("Login successful");
+      return true;
+    } catch (_) {
       if (!this.running) return false;
+      this.log("Login timeout, retrying...");
+      return await this.waitForLogin();
     }
-    return false;
   }
 
   async startReading() {
