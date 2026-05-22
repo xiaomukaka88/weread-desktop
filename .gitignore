@@ -2,6 +2,9 @@
 dist/
 dist-new/
 dist-build/
+
+# User data
+.weread/
 build-output/
 output-*/
 installer-*/
