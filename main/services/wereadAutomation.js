@@ -56,11 +56,17 @@ class WeReadAutomation {
       options.addArguments(`--user-data-dir=${profileDir}`);
     }
 
-    const driver = await new Builder()
-      .forBrowser(browserType)
-      .setOptions(options)
-      .build();
+    const builder = new Builder().forBrowser(browserType);
+    // selenium-webdriver 4.x uses setChromeOptions/setFirefoxOptions/setEdgeOptions
+    if (browserType === Browser.FIREFOX) {
+      builder.setFirefoxOptions(options);
+    } else if (browserType === "MicrosoftEdge") {
+      builder.setEdgeOptions(options);
+    } else {
+      builder.setChromeOptions(options);
+    }
 
+    const driver = await builder.build();
     return driver;
   }
 
