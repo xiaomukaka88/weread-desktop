@@ -1,0 +1,28 @@
+# Build output
+dist/
+dist-build/
+build-output/
+output-*/
+installer-*/
+tmp-*/
+build-*/
+*.exe
+*.exe.blockmap
+
+# Asar
+*.asar
+*.asar.unpacked/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Local config
+.claude/settings.local.json
+
+# Superpowers temp
+.superpowers/
