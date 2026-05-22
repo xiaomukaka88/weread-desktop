@@ -1,74 +1,73 @@
 const { ipcMain } = require("electron");
+const { UserManager } = require("../services/userManager");
+const { createSettingsWindow } = require("../windows/settings");
+const { createStatsPanel } = require("../windows/statsPanel");
+
+let userManager = null;
+function getUserManager() {
+  if (!userManager) userManager = new UserManager();
+  return userManager;
+}
 
 function registerIpcHandlers(sessionManager) {
-  ipcMain.handle("get-users", async () => {
-    const { UserManager } = require("../services/userManager");
-    const um = new UserManager();
-    return um.getConfig();
+  // User management
+  ipcMain.handle("get-users", () => {
+    return getUserManager().getConfig();
   });
 
-  ipcMain.handle("save-users", async (_event, data) => {
-    const { UserManager } = require("../services/userManager");
-    const um = new UserManager();
-    um.save(data);
-    return { success: true };
+  ipcMain.handle("save-users", (_, data) => {
+    getUserManager().save(data);
   });
 
-  ipcMain.handle("get-active-user", async () => {
-    const { UserManager } = require("../services/userManager");
-    const um = new UserManager();
-    return um.getActiveUser();
+  ipcMain.handle("get-active-user", () => {
+    return getUserManager().getActiveUser();
   });
 
-  ipcMain.handle("set-active-user", async (_event, userId) => {
-    const { UserManager } = require("../services/userManager");
-    const um = new UserManager();
-    um.setActiveUser(userId);
-    return { success: true };
+  ipcMain.handle("set-active-user", (_, userId) => {
+    getUserManager().setActiveUser(userId);
   });
 
-  ipcMain.handle("add-user", async (_event, user) => {
-    const { UserManager } = require("../services/userManager");
-    const um = new UserManager();
-    um.addUser(user);
-    return { success: true };
+  ipcMain.handle("add-user", (_, user) => {
+    getUserManager().addUser(user);
   });
 
-  ipcMain.handle("remove-user", async (_event, userId) => {
-    const { UserManager } = require("../services/userManager");
-    const um = new UserManager();
-    um.removeUser(userId);
-    return { success: true };
+  ipcMain.handle("remove-user", (_, userId) => {
+    getUserManager().removeUser(userId);
   });
 
-  ipcMain.handle("get-session-status", async () => {
-    return sessionManager.getStatus();
-  });
-
-  ipcMain.handle("start-reading", async (_event, userId) => {
+  // Session control
+  ipcMain.handle("start-reading", async (_, userId) => {
     await sessionManager.start(userId);
-    return { success: true };
   });
 
   ipcMain.handle("stop-reading", async () => {
     await sessionManager.stop();
-    return { success: true };
   });
 
-  ipcMain.handle("get-stats", async (_event, userId) => {
-    return { userId, totalMinutes: 0, sessions: [] };
+  ipcMain.handle("get-session-status", () => {
+    return sessionManager.getStatus();
   });
 
-  ipcMain.handle("get-daily-stats", async (_event, userId) => {
-    return { userId, daily: [] };
+  // Stats
+  ipcMain.handle("get-stats", (_, userId) => {
+    const { StatsTracker } = require("../services/statsTracker");
+    return new StatsTracker(userId).getSummary();
   });
 
+  ipcMain.handle("get-daily-stats", (_, userId) => {
+    const { StatsTracker } = require("../services/statsTracker");
+    return new StatsTracker(userId).getDailyData();
+  });
+
+  // Window commands (from renderer)
   ipcMain.on("open-settings", () => {
-    require("../windows/settings").showSettingsWindow();
+    createSettingsWindow();
   });
 
-  ipcMain.on("open-stats", () => {
-    require("../windows/statsPanel").createStatsPanel();
+  ipcMain.on("open-stats", async () => {
+    const um = getUserManager();
+    const activeUser = um.getActiveUser();
+    createStatsPanel(activeUser.id);
   });
 }
 
