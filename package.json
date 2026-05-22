@@ -1,0 +1,23 @@
+{
+  "name": "weread-desktop",
+  "version": "0.1.0",
+  "description": "微信读书自动阅读 Windows 桌面应用",
+  "main": "main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.27.0",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0",
+    "nodemailer": "^6.9.16",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

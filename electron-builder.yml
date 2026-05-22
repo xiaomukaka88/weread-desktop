@@ -1,0 +1,21 @@
+appId: dev.techfetch.weread-desktop
+productName: 微信读书助手
+directories:
+  output: dist
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: 微信读书助手
+  uninstallDisplayName: 微信读书助手
+files:
+  - "main/**/*"
+  - "preload/**/*"
+  - "renderer/**/*"
+  - "node_modules/**/*"
+extraMetadata:
+  main: main/index.js
