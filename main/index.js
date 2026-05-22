@@ -1,5 +1,4 @@
-const { app, Tray, Menu, BrowserWindow } = require("electron");
-const path = require("path");
+const { app, BrowserWindow } = require("electron");
 const { showStatusBar, sendStatusUpdate, sendLog } = require("./windows/statusBar");
 const { createTray } = require("./services/tray");
 const { SessionManager } = require("./services/sessionManager");
