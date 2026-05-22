@@ -1,23 +1,74 @@
 const { EventEmitter } = require("events");
+const { WeReadAutomation } = require("./wereadAutomation");
+const { UserManager } = require("./userManager");
+const { StatsTracker } = require("./statsTracker");
 
 class SessionManager extends EventEmitter {
   constructor() {
     super();
+    this.automation = null;
     this._status = { running: false, minutes: 0, targetMinutes: 68 };
+    this._statsTracker = null;
+    this._statsMinutes = 0;
   }
 
   async start(userId) {
-    this._status = { ...this._status, running: true };
-    this.emit("update", this._status);
+    const um = new UserManager();
+    const config = um.getConfig();
+    const user = config.users[userId];
+    if (!user) return;
+
+    this._statsTracker = new StatsTracker(userId);
+    this._statsMinutes = 0;
+
+    const automationConfig = {
+      userId,
+      duration: user.duration,
+      browser: user.browser,
+      selection: user.selection,
+      speed: user.speed,
+      dataDir: `.weread/${userId}`,
+    };
+
+    this.automation = new WeReadAutomation(automationConfig, this);
+
+    this.automation.on("update", (data) => {
+      this._status = data;
+      this.emit("update", data);
+    });
+
+    this.automation.on("stats", (data) => {
+      this._statsMinutes += data.minutes;
+      if (this._statsMinutes >= 5) {
+        this._statsTracker?.recordSession(this._statsMinutes);
+        this._statsMinutes = 0;
+      }
+    });
+
+    this.automation.on("log", (data) => {
+      this.emit("log", data);
+    });
+
+    this.automation.on("complete", () => {
+      this.automation = null;
+    });
+
+    await this.automation.startReading();
   }
 
   async stop() {
+    if (this.automation) {
+      await this.automation.stop();
+      if (this._statsMinutes > 0) {
+        this._statsTracker?.recordSession(this._statsMinutes);
+      }
+    }
     this._status = { ...this._status, running: false };
     this.emit("update", this._status);
   }
 
   getStatus() {
-    return this._status;
+    return this.automation ? this.automation.getStatus() : this._status;
   }
 }
 
