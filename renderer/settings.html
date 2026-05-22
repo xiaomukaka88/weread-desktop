@@ -131,10 +131,72 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    /* Add user dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-box h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .modal-box input {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-dark);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    .modal-box input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
   </style>
 </head>
 <body>
   <div id="saveFeedback">已保存</div>
+  <div id="addUserModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3>添加用户</h3>
+      <input type="text" id="addUserName" placeholder="用户名称" autofocus>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelAddUser">取消</button>
+        <button class="btn" id="confirmAddUser">确定</button>
+      </div>
+    </div>
+  </div>
+  <div id="confirmOverlay" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="confirmMessage">确认？</h3>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="confirmNo">取消</button>
+        <button class="btn" id="confirmYes" style="background:#c0392b;">删除</button>
+      </div>
+    </div>
+  </div>
   <div id="app">
     <h2>设置</h2>
     <div class="tabs">
@@ -275,11 +337,22 @@
       showSaveFeedback();
     });
 
-    document.getElementById("addUser").addEventListener("click", async () => {
+    document.getElementById("addUser").addEventListener("click", () => {
+      const modal = document.getElementById("addUserModal");
+      const input = document.getElementById("addUserName");
+      input.value = "";
+      modal.classList.add("show");
+      input.focus();
+    });
+
+    async function doAddUser() {
+      const input = document.getElementById("addUserName");
+      const name = input.value.trim();
+      if (!name) return;
+      closeModal();
+
       const config = await window.weread.getUsers();
       const id = "user-" + Date.now();
-      const name = prompt("用户名称:");
-      if (!name) return;
       config.users[id] = {
         id, name, duration: 68, browser: "chrome", selection: 2, speed: "slow",
         email: { enabled: false, smtp: "", user: "", pass: "", from: "", to: "", port: 465 },
@@ -289,7 +362,18 @@
       await window.weread.saveUsers(config);
       loadSettings();
       showSaveFeedback();
+    }
+
+    document.getElementById("confirmAddUser").addEventListener("click", doAddUser);
+    document.getElementById("cancelAddUser").addEventListener("click", closeModal);
+    document.getElementById("addUserName").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doAddUser();
+      if (e.key === "Escape") closeModal();
     });
+
+    function closeModal() {
+      document.getElementById("addUserModal").classList.remove("show");
+    }
 
     document.getElementById("saveNotify").addEventListener("click", async () => {
       const config = await window.weread.getUsers();
@@ -331,15 +415,47 @@
       const config = await window.weread.getUsers();
       const userCount = Object.keys(config.users).length;
       if (userCount <= 1) {
-        alert("至少保留一个用户");
+        showToast("至少保留一个用户");
         return;
       }
       const user = config.users[userId];
-      if (!confirm(`确认删除用户 "${user.name}"？`)) return;
+      const confirmed = await confirmDialog(`确认删除用户 "${user.name}"？`);
+      if (!confirmed) return;
       await window.weread.removeUser(userId);
       loadSettings();
       showSaveFeedback();
     };
+
+    function showToast(message) {
+      const el = document.getElementById("saveFeedback");
+      el.textContent = message;
+      el.style.background = "#c0392b";
+      el.classList.add("show");
+      setTimeout(() => {
+        el.classList.remove("show");
+        el.style.background = "";
+        el.textContent = "已保存";
+      }, 2000);
+    }
+
+    function confirmDialog(message) {
+      const overlay = document.getElementById("confirmOverlay");
+      overlay.querySelector("#confirmMessage").textContent = message;
+      overlay.classList.add("show");
+      return new Promise((resolve) => {
+        window._confirmResolve = (val) => { resolve(val); };
+      }).then((val) => {
+        overlay.classList.remove("show");
+        return val;
+      });
+    }
+
+    document.getElementById("confirmYes").addEventListener("click", () => {
+      if (window._confirmResolve) window._confirmResolve(true);
+    });
+    document.getElementById("confirmNo").addEventListener("click", () => {
+      if (window._confirmResolve) window._confirmResolve(false);
+    });
 
     loadSettings();
   </script>
