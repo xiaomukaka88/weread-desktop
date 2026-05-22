@@ -94,21 +94,33 @@ class WeReadAutomation {
     });
 
     const WAIT_URL = "https://weread.qq.com/";
-    await this.driver.get(WAIT_URL);
 
-    try {
-      await this.driver.wait(
-        until.urlContains("reader"),
-        300000,
-      );
-      await this.saveCookies();
-      this.log("Login successful");
-      return true;
-    } catch (_) {
-      if (!this.running) return false;
-      this.log("Login timeout, retrying...");
-      return await this.waitForLogin();
+    while (this.running) {
+      await this.driver.get(WAIT_URL);
+      this.log("Please scan QR code to login...");
+
+      try {
+        // Wait up to 5 minutes for any sign of being logged in:
+        // - reader URL, - shelf URL, - or wr_vid cookie present
+        await this.driver.wait(
+          async () => {
+            const url = await this.driver.getCurrentUrl();
+            if (url.includes("reader") || url.includes("web/shelf")) return true;
+            const cookies = await this.driver.manage().getCookies();
+            return cookies.some((c) => c.name === "wr_vid");
+          },
+          300000,
+        );
+        await this.saveCookies();
+        this.log("Login successful");
+        return true;
+      } catch (_) {
+        // Timeout - user hasn't scanned yet, show QR again
+        if (!this.running) return false;
+        this.log("QR expired, refreshing...");
+      }
     }
+    return false;
   }
 
   async startReading() {
@@ -152,7 +164,18 @@ class WeReadAutomation {
           } catch (_) {}
         }
         await this.driver.get("https://weread.qq.com/");
-        await this.driver.wait(until.urlContains("reader"), 10000);
+        await this.driver.sleep(2000);
+        // Check if we're already logged in (reader, shelf, or any weread page)
+        const url = await this.driver.getCurrentUrl();
+        if (!url.includes("login") && !url.includes("qr") && url.includes("weread")) {
+          this.log("Cookie login successful");
+          return;
+        }
+        // Not logged in - wait for redirect
+        await this.driver.wait(
+          until.urlMatches(/(reader|web\/shelf|web\/book)/),
+          10000,
+        );
       } catch (_) {
         this.log("Cookie login failed, falling back to QR");
         await this.waitForLogin();
