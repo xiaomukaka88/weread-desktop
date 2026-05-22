@@ -27,7 +27,7 @@ class SessionManager extends EventEmitter {
       browser: user.browser,
       selection: user.selection,
       speed: user.speed,
-      dataDir: `.weread/${userId}`,
+      dataDir: undefined,
     };
 
     this.automation = new WeReadAutomation(automationConfig, this);
@@ -81,7 +81,7 @@ class SessionManager extends EventEmitter {
       browser: user.browser,
       selection: user.selection,
       speed: user.speed,
-      dataDir: `.weread/${userId}`,
+      dataDir: undefined,
     };
 
     const auth = new WeReadAutomation(automationConfig, this);

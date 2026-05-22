@@ -65,7 +65,8 @@ class UserManager {
   }
 
   isLoggedIn(userId) {
-    const cookiePath = path.join(app.getPath("userData"), ".weread", userId, "cookies.json");
+    // Match the path used in wereadAutomation.js: resolve(".weread/{userId}/cookies.json")
+    const cookiePath = path.resolve(path.join(".weread", userId, "cookies.json"));
     try {
       if (fs.existsSync(cookiePath)) {
         const cookies = JSON.parse(fs.readFileSync(cookiePath, "utf8"));

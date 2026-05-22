@@ -18,7 +18,7 @@ class WeReadAutomation {
   }
 
   get dataDir() {
-    return path.resolve(this.config.dataDir || ".weread");
+    return this.config.dataDir || path.resolve(path.join(".weread", this.config.userId));
   }
 
   get cookieFile() { return path.join(this.dataDir, "cookies.json"); }
