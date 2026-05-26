@@ -1,4 +1,4 @@
-const { BrowserWindow, BrowserView } = require("electron");
+const { BrowserWindow, BrowserView, app } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -45,6 +45,14 @@ function createMainWindow() {
   mainWindow.on("ready-to-show", () => {
     updateViewBounds();
     mainWindow.show();
+  });
+
+  // Hide to tray instead of closing
+  mainWindow.on("close", (event) => {
+    if (!app.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
   });
 
   mainWindow.on("resized", () => {

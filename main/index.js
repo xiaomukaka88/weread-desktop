@@ -40,6 +40,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", async () => {
+  app.isQuitting = true;
   if (sessionManager) {
     await sessionManager.stop();
   }
