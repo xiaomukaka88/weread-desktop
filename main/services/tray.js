@@ -5,13 +5,8 @@ const fs = require("fs");
 function ensureIconExists() {
   const iconPath = path.join(app.getAppPath(), "build", "tray-icon.png");
 
-  // Check if file exists and is a reasonable size (valid PNG, not corrupted)
-  if (fs.existsSync(iconPath)) {
-    const stat = fs.statSync(iconPath);
-    if (stat.size > 100 && stat.size < 500000) return iconPath;
-    // File too large or too small — likely corrupt, regenerate
-    try { fs.unlinkSync(iconPath); } catch (_) {}
-  }
+  // If user provided icon exists, use it (any size)
+  if (fs.existsSync(iconPath) && fs.statSync(iconPath).size > 100) return iconPath;
 
   // Generate icon programmatically
   try {
