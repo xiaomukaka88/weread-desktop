@@ -7,33 +7,32 @@ class SessionManager extends EventEmitter {
   constructor() {
     super();
     this.automation = null;
-    this._status = { running: false, minutes: 0, targetMinutes: 68 };
+    this._status = { running: false, minutes: 0, targetMinutes: 0 };
     this._statsTracker = null;
     this._statsMinutes = 0;
   }
 
-  async start(userId) {
-    const um = new UserManager();
-    const config = um.getConfig();
-    const user = config.users[userId];
-    if (!user) return;
-
-    this._statsTracker = new StatsTracker(userId);
+  async start() {
+    this._statsTracker = new StatsTracker("user-1");
     this._statsMinutes = 0;
 
+    // Read config for speed setting
+    const { UserManager } = require("./userManager");
+    const userConfig = new UserManager().getConfig();
+
     const automationConfig = {
-      userId,
-      duration: user.duration,
-      browser: user.browser,
-      selection: user.selection,
-      speed: user.speed,
-      dataDir: undefined,
+      userId: "user-1",
+      selection: userConfig.selection || 3,
+      speed: userConfig.speed || "normal",
     };
 
     this.automation = new WeReadAutomation(automationConfig, this);
 
     this.on("update", (data) => {
-      this._status = data;
+      this._status = { ...this._status, ...data };
+      if (data.minutes > 0 && this._status.status === "login") {
+        delete this._status.status;
+      }
     });
 
     this.on("stats", (data) => {
@@ -67,30 +66,6 @@ class SessionManager extends EventEmitter {
     }
     this._status = { ...this._status, running: false };
     this.emit("update", this._status);
-  }
-
-  async loginUser(userId) {
-    const um = new UserManager();
-    const config = um.getConfig();
-    const user = config.users[userId];
-    if (!user) return { success: false, error: "User not found" };
-
-    const automationConfig = {
-      userId,
-      duration: user.duration,
-      browser: user.browser,
-      selection: user.selection,
-      speed: user.speed,
-      dataDir: undefined,
-    };
-
-    const auth = new WeReadAutomation(automationConfig, this);
-    try {
-      await auth.login();
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
   }
 
   getStatus() {

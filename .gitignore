@@ -3,6 +3,9 @@ dist/
 dist-new/
 dist-build/
 
+# Dependencies
+node_modules/
+
 # User data
 .weread/
 build-output/
@@ -12,6 +15,9 @@ tmp-*/
 build-*/
 *.exe
 *.exe.blockmap
+
+# Logs
+*.log
 
 # Asar
 *.asar

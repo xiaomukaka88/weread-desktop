@@ -1,7 +1,5 @@
-const { ipcMain } = require("electron");
+const { ipcMain, app } = require("electron");
 const { UserManager } = require("../services/userManager");
-const { createSettingsWindow } = require("../windows/settings");
-const { createStatsPanel } = require("../windows/statsPanel");
 
 let userManager = null;
 function getUserManager() {
@@ -10,42 +8,21 @@ function getUserManager() {
 }
 
 function registerIpcHandlers(sessionManager) {
-  // User management
-  ipcMain.handle("get-users", () => {
+  // Config (single user, hardcoded settings)
+  ipcMain.handle("get-config", () => {
     return getUserManager().getConfig();
   });
 
-  ipcMain.handle("save-users", (_, data) => {
+  ipcMain.handle("save-config", (_, data) => {
     getUserManager().save(data);
   });
 
-  ipcMain.handle("get-active-user", () => {
-    return getUserManager().getActiveUser();
-  });
-
-  ipcMain.handle("set-active-user", (_, userId) => {
-    getUserManager().setActiveUser(userId);
-  });
-
-  ipcMain.handle("add-user", (_, user) => {
-    getUserManager().addUser(user);
-  });
-
-  ipcMain.handle("login-user", async (_, userId) => {
-    return await sessionManager.loginUser(userId);
-  });
-
-  ipcMain.handle("remove-user", (_, userId) => {
-    getUserManager().removeUser(userId);
-  });
-
-  ipcMain.handle("check-user-login", (_, userId) => {
-    return getUserManager().isLoggedIn(userId);
-  });
-
-  // Session control
-  ipcMain.handle("start-reading", async (_, userId) => {
-    await sessionManager.start(userId);
+  // Session control — always starts with QR scan
+  ipcMain.handle("start-reading", async () => {
+    sessionManager.start().catch((err) => {
+      console.error("start-reading error:", err);
+    });
+    return { ok: true };
   });
 
   ipcMain.handle("stop-reading", async () => {
@@ -57,25 +34,19 @@ function registerIpcHandlers(sessionManager) {
   });
 
   // Stats
-  ipcMain.handle("get-stats", (_, userId) => {
+  ipcMain.handle("get-stats", () => {
     const { StatsTracker } = require("../services/statsTracker");
-    return new StatsTracker(userId).getSummary();
+    return new StatsTracker("user-1").getSummary();
   });
 
-  ipcMain.handle("get-daily-stats", (_, userId) => {
+  ipcMain.handle("get-daily-stats", () => {
     const { StatsTracker } = require("../services/statsTracker");
-    return new StatsTracker(userId).getDailyData();
+    return new StatsTracker("user-1").getDailyData();
   });
 
-  // Window commands (from renderer)
-  ipcMain.on("open-settings", () => {
-    createSettingsWindow();
-  });
-
-  ipcMain.on("open-stats", async () => {
-    const um = getUserManager();
-    const activeUser = um.getActiveUser();
-    createStatsPanel(activeUser.id);
+  // Quit app
+  ipcMain.on("quit-app", () => {
+    app.quit();
   });
 }
 

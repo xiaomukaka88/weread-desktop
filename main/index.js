@@ -1,5 +1,5 @@
-const { app, BrowserWindow } = require("electron");
-const { showStatusBar, sendStatusUpdate, sendLog } = require("./windows/statusBar");
+const { app, Menu } = require("electron");
+const { createMainWindow, sendStatusUpdate, sendLog, showMainWindow } = require("./windows/mainWindow");
 const { createTray } = require("./services/tray");
 const { SessionManager } = require("./services/sessionManager");
 
@@ -11,14 +11,18 @@ let tray = null;
 let sessionManager = null;
 
 app.whenReady().then(async () => {
+  // Remove default Electron menu bar
+  Menu.setApplicationMenu(null);
+
+  // Create main window with embedded BrowserView
+  createMainWindow();
+
   sessionManager = new SessionManager();
   sessionManager.on("update", (data) => sendStatusUpdate(data));
   sessionManager.on("log", (data) => sendLog(data));
 
   const { registerIpcHandlers } = require("./ipc/handlers");
   registerIpcHandlers(sessionManager);
-
-  showStatusBar();
 
   try {
     tray = createTray(sessionManager);
@@ -27,9 +31,7 @@ app.whenReady().then(async () => {
   }
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      showStatusBar();
-    }
+    showMainWindow();
   });
 });
 

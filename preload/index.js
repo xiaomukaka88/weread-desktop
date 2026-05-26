@@ -1,9 +1,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-const ALLOWED_SEND_CHANNELS = new Set(["open-settings", "open-stats"]);
+const ALLOWED_SEND_CHANNELS = new Set(["quit-app"]);
 const ALLOWED_INVOKE_CHANNELS = new Set([
-  "get-users", "save-users", "get-active-user", "set-active-user",
-  "add-user", "login-user", "remove-user", "check-user-login",
+  "get-config", "save-config",
   "start-reading", "stop-reading",
   "get-session-status", "get-stats", "get-daily-stats",
 ]);
@@ -46,17 +45,11 @@ contextBridge.exposeInMainWorld("weread", {
     return () => ipcRenderer.removeListener("log", handler);
   },
 
-  getUsers: () => ipcRenderer.invoke("get-users"),
-  saveUsers: (data) => ipcRenderer.invoke("save-users", data),
-  getActiveUser: () => ipcRenderer.invoke("get-active-user"),
-  setActiveUser: (userId) => ipcRenderer.invoke("set-active-user", userId),
-  addUser: (user) => ipcRenderer.invoke("add-user", user),
-  loginUser: (userId) => ipcRenderer.invoke("login-user", userId),
-  removeUser: (userId) => ipcRenderer.invoke("remove-user", userId),
-  checkUserLogin: (userId) => ipcRenderer.invoke("check-user-login", userId),
-  startReading: (userId) => ipcRenderer.invoke("start-reading", userId),
+  getConfig: () => ipcRenderer.invoke("get-config"),
+  saveConfig: (data) => ipcRenderer.invoke("save-config", data),
+  startReading: () => ipcRenderer.invoke("start-reading"),
   stopReading: () => ipcRenderer.invoke("stop-reading"),
   getSessionStatus: () => ipcRenderer.invoke("get-session-status"),
-  getStats: (userId) => ipcRenderer.invoke("get-stats", userId),
-  getDailyStats: (userId) => ipcRenderer.invoke("get-daily-stats", userId),
+  getStats: () => ipcRenderer.invoke("get-stats"),
+  getDailyStats: () => ipcRenderer.invoke("get-daily-stats"),
 });

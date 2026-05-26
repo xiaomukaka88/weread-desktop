@@ -1,13 +1,32 @@
 {
   "name": "weread-desktop",
+  "productName": "微信读书助手",
   "version": "0.1.0",
   "description": "微信读书自动阅读 Windows 桌面应用",
+  "author": "weread-desktop",
   "main": "main/index.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
     "build": "electron-builder --win",
     "build:dir": "electron-builder --win --dir"
+  },
+  "build": {
+    "appId": "com.weread.desktop",
+    "productName": "微信读书助手",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/tray-icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "微信读书助手"
+    }
   },
   "devDependencies": {
     "electron": "^33.0.0",
